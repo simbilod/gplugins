@@ -24,13 +24,11 @@ def list_unique_layerstack_z(
 
 def map_unique_layerstack_z(
     layerstack: LayerStack,
-    include_zmax: bool = True,
 ):
     """Map unique LayerStack z coordinates to various layers.
 
     Args:
         layerstack: LayerStack
-        include_zmax: if True, will map a layername to its zmax coordinate, otherwise not
     Returns:
         Dict with layernames as keys and set of unique z-values where the layer is present
     """
@@ -40,23 +38,19 @@ def map_unique_layerstack_z(
     for layername, layer in layer_dict.items():
         zmin = layer["zmin"]
         zmax = layer["zmin"] + layer["thickness"]
-        z_start, z_end = sorted([zmin, zmax])
-        if include_zmax:
+        if zmax > zmin:
             unique_z_dict[layername] = {
-                z for z in z_levels if (z >= z_start and z <= z_end)
+                z for z in z_levels if (z >= zmin and z <= zmax)
             }
         else:
             unique_z_dict[layername] = {
-                z for z in z_levels if (z >= z_start and z < z_end)
+                z for z in z_levels if (z >= zmax and z <= zmin)
             }
 
     return unique_z_dict
 
 
-def get_layer_overlaps_z(
-    layerstack: LayerStack,
-    include_zmax: bool = True,
-):
+def get_layer_overlaps_z(layerstack: LayerStack):
     """Maps layers to unique LayerStack z coordinates.
 
     Args:
@@ -65,7 +59,7 @@ def get_layer_overlaps_z(
         Dict with unique z-positions as keys, and list of layernames as entries
     """
     z_grid = list_unique_layerstack_z(layerstack)
-    unique_z_dict = map_unique_layerstack_z(layerstack, include_zmax)
+    unique_z_dict = map_unique_layerstack_z(layerstack)
     intersection_z_dict = {}
     for z in z_grid:
         current_layers = {

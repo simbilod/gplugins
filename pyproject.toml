@@ -59,9 +59,9 @@ docs = [
 ]
 fdtdz = [
   "pjz==0.0.1",
-  "fdtdz==1.1.1", 
-  "jax==0.4.14", 
-  "jaxlib==0.4.11,
+  "fdtdz==1.1.1",
+  "jax==0.4.14",
+  "jaxlib==0.4.11"
 ]
 femwell = [
   "femwell>=0.1.6,<0.5.0"
