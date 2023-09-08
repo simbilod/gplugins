@@ -57,6 +57,9 @@ docs = [
   "jupyter-book==0.15.1",
   "pyvista[jupyter]<=0.40"
 ]
+fdtdz = [
+  "pjz>=0.0.1,<0.1.0"
+]
 femwell = [
   "femwell>=0.1.6,<0.5.0"
 ]
