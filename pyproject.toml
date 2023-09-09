@@ -58,10 +58,7 @@ docs = [
   "pyvista[jupyter]<=0.40"
 ]
 fdtdz = [
-  "pjz==0.0.1",
-  "fdtdz==1.1.1",
-  "jax==0.4.14",
-  "jaxlib==0.4.11"
+  "pjz==0.0.1"
 ]
 femwell = [
   "femwell>=0.1.6,<0.5.0"
