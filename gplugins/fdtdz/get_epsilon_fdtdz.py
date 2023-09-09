@@ -98,6 +98,11 @@ def component_to_epsilon_pjz(
             values=current_indices,
             pad_width=0,
         )
+        # FIX EDGES
+        i[0, :] = i[1, :]
+        i[:, 0] = i[:, 1]
+        i[-1, :] = i[-2, :]
+        i[:, -1] = i[:, -2]
         # Initialize the array if not initialized
         if not initialized:
             layers = np.zeros((len(z_values) - 1, *np.shape(i)))
