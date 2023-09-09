@@ -2,8 +2,9 @@ import matplotlib.pyplot as plt
 import numpy as np
 from gdsfactory.technology import LayerStack
 from gdsfactory.typings import Float2
-from get_epsilon_fdtdz import create_physical_grid
 from pjz._mode import mode
+
+from gplugins.fdtdz.get_epsilon_fdtdz import create_physical_grid
 
 
 def get_epsilon_port(
@@ -14,6 +15,7 @@ def get_epsilon_port(
     zmin=0,
     nm_per_pixel: int = 20,
     port_extent_xy: float = 1,
+    port_offset: int = 5,
 ):
     """
     This function extracts a xz or yz slice of the epsilon distribution at the location of the port to mode solve.
@@ -24,6 +26,7 @@ def get_epsilon_port(
         xmin (array): The x-coordinates of the epsilon distribution.
         ymin (array): The y-coordinates of the epsilon distribution.
         port_extent_xy (float): The size of the port in the xy-plane. Used to isolate the mode to a given waveguide.
+        port_offset (pixels): FIXME need to move the port towards the simulation a bit
 
     Returns:
         port_slice (array): The slice of the epsilon distribution at the location of the port.
@@ -35,16 +38,34 @@ def get_epsilon_port(
 
     x, y = port.center
     # z_range_indices = np.where((zcoords >= (z - port_size_z)) & (zcoords <= (z + port_size_z)))
+    sgn = 1 if (port.orientation == 180 or port.orientation == 270) else -1
     if port.orientation == 0 or 180:
-        x_index = np.argmin(np.abs(x - xarray))
-        port_slice = epsilon[:, x_index : x_index + 1, :, :]
+        x_index = (
+            int(np.where(np.isclose(xarray, x, atol=nm_per_pixel * 1e-3 / 2))[0][0] / 2)
+            + sgn * port_offset
+        )  # factor of 2 from Yee grid?
+        port_slice = (
+            epsilon[:, x_index : x_index + 1, :, :]
+            if sgn == 1
+            else epsilon[:, x_index - 1 : x_index, :, :]
+        )
         y_range_indices = np.where(
             (yarray <= (y - port_extent_xy)) & (yarray >= (y + port_extent_xy))
         )
         port_slice = port_slice.at[:, 0, y_range_indices, :].set(np.min(port_slice))
     else:
-        y_index = np.argmin(np.abs(y - yarray))
-        port_slice = epsilon[:, :, y_index : y_index + 1, :]
+        y_index = (
+            int(np.where(np.isclose(yarray, y, atol=nm_per_pixel * 1e-3 / 2))[0][0] / 2)
+            + sgn * port_offset
+        )  # factor of 2 from Yee grid?
+        port_slice = (
+            epsilon[:, :, y_index : y_index + 1, :]
+            if sgn == 1
+            else epsilon[:, :, y_index - 1 : y_index, :]
+        )
+        epsilon[:, x_index : x_index + 1, :, :] if sgn == 1 else epsilon[
+            :, x_index - 1 : x_index, :, :
+        ]
         x_range_indices = np.where(
             (xarray <= (x - port_extent_xy)) & (xarray >= (x + port_extent_xy))
         )
@@ -88,9 +109,9 @@ def get_mode_port(
 
     # Position
     if port.orientation == 0 or port.orientation == 180:
-        pos = np.where(np.isclose(xarray, port.x, atol=nm_per_pixel / 2))[0][0]
+        pos = int(np.where(np.isclose(xarray, port.x, atol=nm_per_pixel / 2))[0][0] / 2)
     else:
-        pos = np.where(np.isclose(yarray, port.y, atol=nm_per_pixel / 2))[0][0]
+        pos = int(np.where(np.isclose(yarray, port.y, atol=nm_per_pixel / 2))[0][0] / 2)
 
     return excitation[:, :, :, :, 0], pos, epsilon_port
 
@@ -119,7 +140,7 @@ def plot_mode(
 
     # Create physical grid
     xarray, yarray, zarray = create_physical_grid(
-        xmin, ymin, zmin, epsilon, nm_per_pixel
+        xmin, ymin, zmin, epsilon_port, nm_per_pixel
     )
 
     # Plot
@@ -131,7 +152,7 @@ def plot_mode(
             origin="lower",
             extent=[yarray[0], yarray[-1], zarray[0], zarray[-1]],
         )
-        axs[0].set_title("Epsilon")
+        axs[0].set_title("Permittivity")
         axs[0].set_xlabel("y")
         axs[0].set_ylabel("z")
         fig.colorbar(im0, ax=axs[0])
@@ -160,9 +181,9 @@ def plot_mode(
         im0 = axs[0].imshow(
             epsilon_port[0, :, 0, :].transpose(),
             origin="lower",
-            extent=[yarray[0], yarray[-1], zarray[0], zarray[-1]],
+            extent=[xarray[0], xarray[-1], zarray[0], zarray[-1]],
         )
-        axs[0].set_title("Epsilon")
+        axs[0].set_title("Permittivity")
         axs[0].set_xlabel("x")
         axs[0].set_ylabel("z")
         fig.colorbar(im0, ax=axs[0])
@@ -170,7 +191,7 @@ def plot_mode(
         im1 = axs[1].imshow(
             np.abs(excitation[0, :, 0, :]).transpose(),
             origin="lower",
-            extent=[yarray[0], yarray[-1], zarray[0], zarray[-1]],
+            extent=[xarray[0], xarray[-1], zarray[0], zarray[-1]],
         )
         axs[1].set_title("|Ex|")
         axs[1].set_xlabel("x")
@@ -180,7 +201,7 @@ def plot_mode(
         im2 = axs[2].imshow(
             np.abs(excitation[1, :, 0, :]).transpose(),
             origin="lower",
-            extent=[yarray[0], yarray[-1], zarray[0], zarray[-1]],
+            extent=[xarray[0], xarray[-1], zarray[0], zarray[-1]],
         )
         axs[2].set_title("|Ez|")
         axs[2].set_xlabel("x")
@@ -244,4 +265,4 @@ if __name__ == "__main__":
         nm_per_pixel=1000,
         figsize=(11, 4),
     )
-    plt.savefig("test_mode.png")
+    plt.savefig("test_mode.png"),

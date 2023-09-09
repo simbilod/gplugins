@@ -1,4 +1,5 @@
 import jax.numpy as jnp
+import matplotlib.pyplot as plt
 import numpy as np
 from gdsfactory.technology import LayerStack
 from gdsfactory.typings import Float2
@@ -19,21 +20,22 @@ material_name_to_fdtdz = {
 
 def create_physical_grid(xmin, ymin, zmin, epsilon, nm_per_pixel):
     _, xinds, yinds, zinds = np.shape(epsilon)
-    xmax = xmin + xinds * nm_per_pixel * 1e-3
-    ymax = ymin + yinds * nm_per_pixel * 1e-3
+    xmax = xmin + xinds * nm_per_pixel * 1e-3 * 2  # Factor of 2 from Yee grid?
+    ymax = ymin + yinds * nm_per_pixel * 1e-3 * 2  # Factor of 2 from Yee grid?
     zmax = zmin + zinds * nm_per_pixel * 1e-3
-    xarray = np.arange(xmin, xmax, nm_per_pixel * 1e-3)
-    yarray = np.arange(ymin, ymax, nm_per_pixel * 1e-3)
-    zarray = np.arange(zmin, zmax, nm_per_pixel * 1e-3)
+    step = nm_per_pixel * 1e-3
+    xarray = np.arange(xmin, xmax + step / 2, nm_per_pixel * 1e-3)
+    yarray = np.arange(ymin, ymax + step / 2, nm_per_pixel * 1e-3)
+    zarray = np.arange(zmin, zmax + step / 2, nm_per_pixel * 1e-3)
     return xarray, yarray, zarray
 
 
 def component_to_epsilon_pjz(
     component,
     layerstack,
-    zmin=None,
-    zz=96,
-    nm_per_pixel=20,
+    zmin: float = None,
+    zz: int = 96,
+    nm_per_pixel: float = 20,
     material_name_to_index=None,
     default_index=1.44,
 ):
@@ -129,7 +131,7 @@ def plot_epsilon(
     xmin: float = 0,
     ymin: float = 0,
     zmin: float = 0,
-    nm_per_pixel: int = 1000,
+    nm_per_pixel: float = 1000,
     figsize: Float2 = (11, 4),
 ):
     """Plot epsilon distribution.
@@ -142,10 +144,10 @@ def plot_epsilon(
             Only one of x,y, or z must be numeric.
             By default with nm_per_pixel = 1000 and xmin = ymin = zmin = 0, these are array indices
             Otherwise, these correspond to the physical coordinate in um
-        xmin: (um) minimum x-coordinate
-        ymin: (um) minimum y-coordinate
-        zmin: (um) minimum z-coordinate
-        nm_per_pixel: (int) resolution
+        xmin: (um) minimum x-coordinate (default to 0 for pixel index)
+        ymin: (um) minimum y-coordinate (default to 0 for pixel index)
+        zmin: (um) minimum z-coordinate (default to 0 for pixel index)
+        nm_per_pixel: (int) resolution (default to 1000 for pixel index)
         figsize: figure size.
     """
 
@@ -161,31 +163,41 @@ def plot_epsilon(
     # Plot
     fig = plt.figure(figsize=figsize)
     if x is not None:
-        x_index = np.where(np.isclose(xarray, x, atol=nm_per_pixel / 2))[0][0]
+        x_index = int(
+            np.where(np.isclose(xarray, x, atol=nm_per_pixel * 1e-3 / 2))[0][0] / 2
+        )  # factor of 2 from Yee grid?
         im = plt.imshow(
             epsilon[0, x_index, :, :].transpose(),
             origin="lower",
             extent=[yarray[0], yarray[-1], zarray[0], zarray[-1]],
+            vmin=np.min(epsilon),
+            vmax=np.max(epsilon),
         )
         plt.xlabel("y")
         plt.ylabel("z")
         plt.title(f"Epsilon Distribution at x = {x}")
     elif y is not None:
-        y_index = np.where(np.isclose(yarray, y, atol=nm_per_pixel / 2))[0][0]
+        y_index = int(
+            np.where(np.isclose(yarray, y, atol=nm_per_pixel * 1e-3 / 2))[0][0] / 2
+        )  # factor of 2 from Yee grid?
         im = plt.imshow(
-            epsilon[0, :, y_index, :].transpose(),
+            epsilon[1, :, y_index, :].transpose(),
             origin="lower",
             extent=[xarray[0], xarray[-1], zarray[0], zarray[-1]],
+            vmin=np.min(epsilon),
+            vmax=np.max(epsilon),
         )
         plt.xlabel("x")
         plt.ylabel("z")
         plt.title(f"Epsilon Distribution at y = {y}")
     else:
-        z_index = np.where(np.isclose(zarray, z, atol=nm_per_pixel / 2))[0][0]
+        z_index = np.where(np.isclose(zarray, z, atol=nm_per_pixel * 1e-3 / 2))[0][0]
         im = plt.imshow(
             epsilon[0, :, :, z_index].transpose(),
             origin="lower",
             extent=[xarray[0], xarray[-1], yarray[0], yarray[-1]],
+            vmin=np.min(epsilon),
+            vmax=np.max(epsilon),
         )
         plt.xlabel("x")
         plt.ylabel("y")
@@ -199,7 +211,6 @@ def plot_epsilon(
 
 if __name__ == "__main__":
     import gdsfactory as gf
-    import matplotlib.pyplot as plt
     from gdsfactory.generic_tech import LAYER, LAYER_STACK
 
     length = 5
@@ -217,12 +228,7 @@ if __name__ == "__main__":
     filtered_layerstack = LayerStack(
         layers={k: LAYER_STACK.layers[k] for k in ["clad", "box", "core"]}
     )
-    filtered_layerstack.layers["core"].zmin = 0
-    filtered_layerstack.layers["core"].thickness = 0.22
-    filtered_layerstack.layers["clad"].zmin = 0
-    filtered_layerstack.layers["clad"].thickness = 1.22
-    filtered_layerstack.layers["box"].thickness = 1
-    filtered_layerstack.layers["box"].zmin = -1
+
     epsilon = component_to_epsilon_pjz(
         component=c, layerstack=filtered_layerstack, zmin=-0.75
     )
