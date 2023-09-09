@@ -15,7 +15,7 @@ def get_epsilon_port(
     zmin=0,
     nm_per_pixel: int = 20,
     port_extent_xy: float = 1,
-    port_offset: int = 5,
+    port_offset: int = 0,
 ):
     """
     This function extracts a xz or yz slice of the epsilon distribution at the location of the port to mode solve.
