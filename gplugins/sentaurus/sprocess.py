@@ -15,7 +15,7 @@ from gdsfactory.technology.processes import (
 from gdsfactory.typings import Dict, Tuple
 
 from gplugins.gmsh.parse_gds import cleanup_component_layermap
-from gplugins.sentaurus.mask import get_sentaurus_mask_2D, get_sentaurus_mask_3D
+from gplugins.sentaurus.mask_sprocess import get_sentaurus_mask_2D, get_sentaurus_mask_3D
 
 DEFAULT_INIT_LINES = """AdvancedCalibration
 mgoals accuracy=2e-5
@@ -322,6 +322,10 @@ def write_sprocess(
                     extra_implant += "mult.rot=4 "
                 if step.tilt:
                     extra_implant += f"tilt={step.tilt}<degree> "
+                if step.monte_carlo:
+                    extra_implant += f"sentaurus.mc "
+                if step.cascades:
+                    extra_implant += f"cascades "
                 f.write(
                     f"implant {step.ion} dose={step.dose:1.3e}<cm-2> energy={step.energy}<keV> {extra_implant}\n"
                 )
