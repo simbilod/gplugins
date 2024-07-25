@@ -327,7 +327,7 @@ def write_sprocess(
                 )
 
             if isinstance(step, Lithography):
-                if step.layer:
+                if step.layer and step.strip_resist:
                     f.write("strip Resist\n")
 
             if isinstance(step, Anneal):
