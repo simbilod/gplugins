@@ -264,7 +264,7 @@ def write_sprocess(
             f.write(str(output_str))
             if split_steps:
                 f.write(
-                    f"struct tdr={str(relative_save_directory)}/{struct_prefix}0_wafer.tdr\n"
+                    f"struct tdr={str(execution_directory)}/{struct_prefix}0_wafer.tdr\n"
                 )
 
         # Global remeshing strategy
@@ -301,7 +301,7 @@ def write_sprocess(
                         )
                     if split_steps:
                         f.write(
-                            f"struct tdr={str(relative_save_directory)}/{struct_prefix}{i+1}_{step.name}_litho.tdr\n"
+                            f"struct tdr={str(execution_directory)}/{struct_prefix}{i+1}_{step.name}_litho.tdr\n"
                         )
 
             if isinstance(step, Etch):
@@ -346,7 +346,7 @@ def write_sprocess(
 
             if split_steps:
                 f.write(
-                    f"struct tdr={str(relative_save_directory)}/{struct_prefix}{i+1}_{step.name}.tdr"
+                    f"struct tdr={str(execution_directory)}/{struct_prefix}{i+1}_{step.name}.tdr"
                 )
 
             f.write("\n")
@@ -371,7 +371,7 @@ def write_sprocess(
 
         # Create structure
         f.write("\n")
-        f.write(f"struct tdr={str(relative_save_directory)}/{structout}")
+        f.write(f"struct tdr={str(execution_directory)}/{structout}")
 
 
 def write_add_contacts_to_tdr(
