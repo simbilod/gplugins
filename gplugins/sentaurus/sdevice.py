@@ -61,12 +61,13 @@ DEFAULT_MATH_SETTINGS = """Math{
   ErrReff(hole)    = 1.0e7
   Iterations=20
   Notdamped=100
+   NumberOfThreads = 4
 }
 """
 
 
 def write_sdevice_quasistationary_ramp_voltage_dd(
-    struct: str = "./sprocess/struct_out_fps.tdr",
+    struct_in: str = "./sprocess/struct_out_fps.tdr",
     contacts: Tuple[str] = ("anode", "cathode", "substrate"),
     ramp_contact_name: str = "cathode",
     ramp_final_voltage: float = 1.0,
@@ -75,12 +76,11 @@ def write_sdevice_quasistationary_ramp_voltage_dd(
     ramp_max_step: float = 0.2,
     ramp_min_step: float = 1e-6,
     ramp_sample_voltages: Floats = (0.0, 0.3, 0.6, 0.8, 1.0),
-    filename: str = "sdevice_fps.cmd",
-    save_directory: Path = None,
-    execution_directory: Path = None,
+    script_path: Path = Path("./sdevice_fps.cmd"),
     output_settings: str = DEFAULT_OUTPUT_SETTINGS,
     physics_settings: str = DEFAULT_PHYSICS_SETTINGS,
     math_settings: str = DEFAULT_MATH_SETTINGS,
+    num_threads: int = 4,
 ):
     """Writes a Sentaurus Device TLC file for sweeping DC voltage of one terminal of a Sentaurus Structure (from sprocess or structure editor) using the drift-diffusion equations (Hole + Electrons + Poisson).
 
@@ -104,24 +104,13 @@ def write_sdevice_quasistationary_ramp_voltage_dd(
         initialization_commands: in the solver, what to execute before the ramp
     """
 
-    save_directory = (
-        Path("./sdevice/") if save_directory is None else Path(save_directory)
-    )
-    execution_directory = (
-        Path("./") if execution_directory is None else Path(execution_directory)
-    )
-
-    relative_save_directory = save_directory.relative_to(execution_directory)
-    struct = struct.relative_to(execution_directory)
-
     # Setup TCL file
-    out_file = pathlib.Path(save_directory / filename)
-    save_directory.mkdir(parents=True, exist_ok=True)
-    if out_file.exists():
-        out_file.unlink()
+    script_path.parent.mkdir(parents=True, exist_ok=True)
+    if script_path.exists():
+        script_path.unlink()
 
     # Initialize electrodes
-    with open(out_file, "a") as f:
+    with open(script_path, "a") as f:
         f.write("Electrode{\n")
         for boundary_name in contacts:
             f.write(f'{{ name="{boundary_name}"      voltage=0 }}\n')
@@ -130,9 +119,9 @@ def write_sdevice_quasistationary_ramp_voltage_dd(
         f.write(
             f"""
 File {{
-  Grid = "{struct}"
-  Plot = "{str(relative_save_directory)}/tdrdat_"
-  Output = "{str(relative_save_directory)}/log_"
+  Grid = "{struct_in}"
+  Plot = "./tdrdat_"
+  Output = "./log_"
 }}
     """
         )
@@ -151,7 +140,7 @@ File {{
 
         # Initialization
         initialization_commands = f"""
-            NewCurrentPrefix=\"{str(relative_save_directory)}/init\"
+            NewCurrentPrefix=\"./init\"
             Coupled(Iterations=100){{ Poisson }}
             Coupled{{ Poisson Electron Hole }}
         """
@@ -172,8 +161,8 @@ File {{
         MaxStep ={ramp_max_step} MinStep = {ramp_min_step}
         Goal{{ Name=\"{ramp_contact_name}\" Voltage={ramp_final_voltage} }}
     ){{ Coupled {{Poisson Electron Hole }}
-        Save(FilePrefix=\"{str(relative_save_directory)}/sweep_save\" Time= ({ramp_sample_voltages_str} ) NoOverWrite )
-        Plot(FilePrefix=\"{str(relative_save_directory)}/sweep_plot\" Time= ({ramp_sample_voltages_str} ) NoOverWrite )
+        Save(FilePrefix=\"./sweep_save\" Time= ({ramp_sample_voltages_str} ) NoOverWrite )
+        Plot(FilePrefix=\"./sweep_plot\" Time= ({ramp_sample_voltages_str} ) NoOverWrite )
     }}
     """
         )
@@ -187,6 +176,7 @@ def write_sdevice_ssac_ramp_voltage_dd(
     save_directory: Path = None,
     execution_directory: Path = None,
     struct: str = "./sprocess/struct_out_fps.tdr",
+    num_threads: int = 4,
 ):
     save_directory = (
         Path("./sdevice/") if save_directory is None else Path(save_directory)

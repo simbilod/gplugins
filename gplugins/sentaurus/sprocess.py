@@ -424,31 +424,22 @@ def write_generic_sprocess_tdr(
     struct_in: str = "/struct_out_fps.tdr",
     struct_out: str = "struct_out_contacts_fps.tdr",
     lines: str = None,
-    filename: str = "sprocess_contacts.cmd",
-    save_directory: Path = None,
-    execution_directory: Path = None,
+    script_path: Path | None = Path("./sprocess_contacts.cmd"),
 ):
-    """Loads struct_in, add scripts lines, and outputs struct_out."""
-    # Fix paths
-    save_directory = Path("./") if save_directory is None else Path(save_directory)
-    execution_directory = (
-        Path("./") if execution_directory is None else Path(execution_directory)
-    )
+    """Loads struct_in, add scripts lines, and outputs struct_out.
 
-    save_directory.relative_to(execution_directory)
-
-    relative_input_tdr_file = struct_in.relative_to(execution_directory)
-    relative_output_tdr_file = struct_out.relative_to(execution_directory)
+    struct_in and struct out are absolute paths to input and output files (for the filesystem where the Sentaurus command will be run)
+    script_path is the local path where the script will be saved    
+    """
 
     # Setup TCL file
-    out_file = pathlib.Path(save_directory / filename)
-    save_directory.mkdir(parents=True, exist_ok=True)
-    if out_file.exists():
-        out_file.unlink()
+    script_path.parent.mkdir(parents=True, exist_ok=True)
+    if script_path.exists():
+        script_path.unlink()
 
     # Load TDR file
-    with open(out_file, "a") as f:
-        f.write(f"init tdr= {str(relative_input_tdr_file)}")
+    with open(script_path, "a") as f:
+        f.write(f"init tdr= {str(struct_in)}")
         f.write("\n")
 
         # Manual for now
@@ -456,7 +447,7 @@ def write_generic_sprocess_tdr(
 
         # Create structure
         f.write("\n")
-        f.write(f"struct tdr={str(relative_output_tdr_file)}")
+        f.write(f"struct tdr={str(struct_out)}")
 
 
 def write_extrude_combine_tdrs(
