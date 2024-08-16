@@ -164,7 +164,6 @@ def write_sprocess(
     u_offset: float = 0.0,
     init_tdr: str = None,
     save_directory: Path = None,
-    execution_directory: Path = None,
     script_path: Path | None = Path("./sprocess_fps.cmd"),
     struct_prefix: str = "struct_",
     structout: str | None = None,
@@ -215,14 +214,12 @@ def write_sprocess(
     save_directory = (
         Path("./sprocess/") if save_directory is None else Path(save_directory)
     )
-    execution_directory = (
-        Path("./") if execution_directory is None else Path(execution_directory)
-    )
     structout = structout or component.name + ".tdr"
 
-    relative_save_directory = save_directory.relative_to(execution_directory)
+    # holdover from prior formulation
+    relative_save_directory = save_directory
     if init_tdr is not None:
-        relative_tdr_file = init_tdr.relative_to(execution_directory)
+        relative_tdr_file = init_tdr
 
     # Setup TCL file
     out_file = script_path
@@ -371,7 +368,7 @@ def write_sprocess(
 
         # Create structure
         f.write("\n")
-        f.write(f"struct tdr={str(execution_directory)}/{structout}")
+        f.write(f"struct tdr={structout}")
 
 
 def write_add_contacts_to_tdr(

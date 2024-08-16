@@ -81,6 +81,7 @@ def write_sdevice_quasistationary_ramp_voltage_dd(
     physics_settings: str = DEFAULT_PHYSICS_SETTINGS,
     math_settings: str = DEFAULT_MATH_SETTINGS,
     num_threads: int = 4,
+    contact_resistance: float = 0,
 ):
     """Writes a Sentaurus Device TLC file for sweeping DC voltage of one terminal of a Sentaurus Structure (from sprocess or structure editor) using the drift-diffusion equations (Hole + Electrons + Poisson).
 
@@ -102,6 +103,7 @@ def write_sdevice_quasistationary_ramp_voltage_dd(
         physics_settings: "Physics" field settings to add to the TCL file
         math_settings: str = "Math" field settings to add to the TCL file
         initialization_commands: in the solver, what to execute before the ramp
+        contact_resistance: in series with the ramped contact
     """
 
     # Setup TCL file
@@ -113,7 +115,7 @@ def write_sdevice_quasistationary_ramp_voltage_dd(
     with open(script_path, "a") as f:
         f.write("Electrode{\n")
         for boundary_name in contacts:
-            f.write(f'{{ name="{boundary_name}"      voltage=0 }}\n')
+            f.write(f'{{ name="{boundary_name}"      voltage=0 Resist={contact_resistance}}}\n')
         f.write("}\n")
 
         f.write(
