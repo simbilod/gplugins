@@ -165,7 +165,7 @@ def write_sprocess(
     init_tdr: str = None,
     save_directory: Path = None,
     execution_directory: Path = None,
-    filename: str = "sprocess_fps.cmd",
+    script_path: Path | None = Path("./sprocess_fps.cmd"),
     struct_prefix: str = "struct_",
     structout: str | None = None,
     round_tol: int = 3,
@@ -198,7 +198,7 @@ def write_sprocess(
         u_offset: offset for lateral dimension of xsection mesh
         save_directory: directory where to save output and script. Default ./sprocess
         execution_directory: directory where sprocess will be run from. Default local ./
-        filename: name of the final sprocess command file
+        script_path: path of the final sprocess command file
         struct_prefix: prefixes of the final sprocess command file
         structout: tdr file containing the final structure, ready for sdevice simulation. Defaults to component name.
         contact_portnames Tuple(str): list of portnames to convert into device contacts
@@ -225,8 +225,8 @@ def write_sprocess(
         relative_tdr_file = init_tdr.relative_to(execution_directory)
 
     # Setup TCL file
-    out_file = pathlib.Path(save_directory / filename)
-    save_directory.mkdir(parents=True, exist_ok=True)
+    out_file = script_path
+    out_file.parent.mkdir(parents=True, exist_ok=True)
     if out_file.exists():
         out_file.unlink()
 
